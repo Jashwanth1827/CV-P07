@@ -334,7 +334,9 @@ def restore_from_url_params():
             st.session_state.predictions = data.get("predictions")
 
 
-restore_from_url_params()
+if not st.session_state.authenticated:
+    restore_from_url_params()
+
 
 
 # =============================================================================
