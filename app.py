@@ -35,6 +35,28 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+# Hide Streamlit toolbar and footer
+st.markdown("""
+<style>
+
+/* Hide top toolbar (Fork, GitHub, etc.) */
+[data-testid="stToolbar"] {
+    display: none !important;
+}
+
+/* Hide hamburger menu */
+#MainMenu {
+    visibility: hidden;
+}
+
+/* Hide footer (Hosted with Streamlit) */
+footer {
+    visibility: hidden;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 
 
 # =============================================================================
