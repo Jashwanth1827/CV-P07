@@ -25,7 +25,7 @@ from db_manager import (
 # =============================================================================
 
 
-API_BASE = "http://localhost:8000"
+API_BASE = "https://cv-p07.onrender.com"
 init_db()
 
 
