@@ -300,33 +300,49 @@ def get_query_params():
 
 
 def set_query_params(params):
-    """Set query params - compatible with all Streamlit versions"""
+    """
+    Properly set or clear query params.
+    This fixes logout bug completely.
+    """
     try:
-        st.query_params.update(params)
-    except AttributeError:
+        # Streamlit 1.30+
+        st.query_params.clear()
+        for k, v in params.items():
+            st.query_params[k] = v
+    except Exception:
         try:
-            st.experimental_set_query_params(**params)
-        except AttributeError:
+            # Older Streamlit versions
+            if params:
+                st.experimental_set_query_params(**params)
+            else:
+                st.experimental_set_query_params()
+        except Exception:
             pass
 
 
+
 def restore_from_url_params():
-    """Check if user_id in URL and restore authentication"""
+    """
+    Restore login from URL only if not already logged in.
+    """
+    if st.session_state.authenticated:
+        return
+
     params = get_query_params()
-    
+
     if "user_id" in params and "username" in params:
         user_id = params["user_id"]
+        username = params["username"]
+
         if isinstance(user_id, list):
             user_id = user_id[0]
-        
-        username = params["username"]
         if isinstance(username, list):
             username = username[0]
-        
+
         st.session_state.authenticated = True
         st.session_state.user_id = user_id
         st.session_state.username = username
-        
+
         data = load_session_data(user_id)
         if data:
             st.session_state.df_uploaded = data.get("df_uploaded")
@@ -334,8 +350,9 @@ def restore_from_url_params():
             st.session_state.predictions = data.get("predictions")
 
 
-if not st.session_state.authenticated:
-    restore_from_url_params()
+
+restore_from_url_params()
+
 
 
 
