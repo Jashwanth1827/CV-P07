@@ -42,10 +42,19 @@ logger = logging.getLogger(__name__)
 MODEL = None
 EXPECTED_FEATURES = 58
 
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "model.pkl")
+
 try:
-    with open("model.pkl", "rb") as f:
+    with open(MODEL_PATH, "rb") as f:
         MODEL = pickle.load(f)
-    logger.info("✅ Model loaded successfully")
+    logger.info(f"✅ Model loaded successfully from {MODEL_PATH}")
+except Exception as e:
+    logger.error(f"❌ Model load failed: {e}")
+    MODEL = None
+
 except FileNotFoundError:
     logger.error("❌ model.pkl not found in current directory")
     MODEL = None
