@@ -36,26 +36,53 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 # Hide Streamlit toolbar and footer
+# 🔥 Hide ALL Streamlit branding (Toolbar, GitHub, Fork, Footer, Badge)
 st.markdown("""
 <style>
 
-/* Hide top toolbar (Fork, GitHub, etc.) */
+/* Hide entire header (top bar with Fork/GitHub) */
+header {
+    visibility: hidden !important;
+}
+
+/* Hide toolbar container */
 [data-testid="stToolbar"] {
+    display: none !important;
+}
+
+/* Hide GitHub / Fork buttons */
+button[kind="header"] {
     display: none !important;
 }
 
 /* Hide hamburger menu */
 #MainMenu {
-    visibility: hidden;
+    display: none !important;
 }
 
-/* Hide footer (Hosted with Streamlit) */
+/* Hide footer */
 footer {
-    visibility: hidden;
+    visibility: hidden !important;
+}
+
+/* Hide bottom-right Streamlit badge */
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
+/* Hide floating status widget */
+div[data-testid="stStatusWidget"] {
+    display: none !important;
+}
+
+/* Extra aggressive fallback */
+.stDeployButton {
+    display: none !important;
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
