@@ -33,60 +33,54 @@ st.set_page_config(
     page_title="⚡ PowerGrid Analytics",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",  # ← This works better with CSS
 )
+
+# EMERGENCY LOGOUT - Top-right corner
+col1, col2, col3 = st.columns([1, 1, 1])
+with col3:
+    if st.button("🚪 Logout", key="emergency_logout"):
+        save_user_session()
+        for key in st.session_state:
+            del st.session_state[key]
+        st.rerun()
+
 # Hide Streamlit toolbar and footer
 # 🔥 Hide ALL Streamlit branding (Toolbar, GitHub, Fork, Footer, Badge)
 st.markdown("""
 <style>
-
-/* Hide toolbar container */
-[data-testid="stToolbar"] {
-    display: none !important;
+/* FORCE SIDEBAR VISIBLE - Critical for logout access */
+section[data-testid="stSidebar"] {
+    position: relative !important;
+    width: 280px !important;
+    visibility: visible !important;
+    display: block !important;
 }
 
-/* Hide GitHub / Fork buttons */
-button[kind="header"] {
-    display: none !important;
+/* Keep sidebar toggle button */
+[data-testid="collapsedControl"] {
+    display: block !important;
+    visibility: visible !important;
 }
 
-/* Hide hamburger menu icon (but keep sidebar functionality) */
-#MainMenu {
-    visibility: hidden !important;
-}
+/* Hide branding ONLY - keep functional elements */
+[data-testid="stToolbar"] { display: none !important; }
+button[kind="header"] { display: none !important; }
+footer { visibility: hidden !important; }
+[data-testid="stDecoration"] { display: none !important; }
+div[data-testid="stStatusWidget"] { display: none !important; }
+.stDeployButton { display: none !important; }
 
-/* Hide footer */
-footer {
-    visibility: hidden !important;
-}
-
-/* Hide bottom-right Streamlit badge */
-[data-testid="stDecoration"] {
-    display: none !important;
-}
-
-/* Hide floating status widget */
-div[data-testid="stStatusWidget"] {
-    display: none !important;
-}
-
-/* Extra aggressive fallback */
-.stDeployButton {
-    display: none !important;
-}
-
-/* Keep sidebar toggle but hide header branding */
+/* Hide header text but keep toggle */
 header[data-testid="stHeader"] {
     background: transparent !important;
 }
-
-/* Hide the actual Streamlit icon/text in header */
 header[data-testid="stHeader"] > div:first-child {
     visibility: hidden !important;
 }
-
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # =============================================================================
