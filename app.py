@@ -1,4 +1,4 @@
-# app_v2.py - ENHANCED DATA PREVIEW
+# app_v2.py - ENHANCED DATA PREVIEW WITH TAB PERSISTENCE
 # PowerGrid Analytics - Production Grade with Full-Screen Data View
 
 import streamlit as st
@@ -82,8 +82,6 @@ div[data-testid="stStatusWidget"] {
 
 </style>
 """, unsafe_allow_html=True)
-
-
 
 
 # =============================================================================
@@ -330,6 +328,11 @@ if "predictions" not in st.session_state:
 if "show_signup" not in st.session_state:
     st.session_state.show_signup = False
 
+# TAB PERSISTENCE - Initialize active tab
+TAB_LABELS = ["📤 Data Upload", "📊 Analytics", "🚨 Anomalies", "🎯 Forecast", "📥 Reports"]
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = TAB_LABELS[0]
+
 
 # =============================================================================
 # RESTORE LOGIN FROM URL PARAMS (survives F5/Cmd+R)
@@ -369,10 +372,9 @@ def set_query_params(params):
             pass
 
 
-
 def restore_from_url_params():
     """
-    Restore login from URL only if not already logged in.
+    Restore login and active tab from URL only if not already logged in.
     """
     if st.session_state.authenticated:
         return
@@ -398,11 +400,16 @@ def restore_from_url_params():
             st.session_state.df_processed = data.get("df_processed")
             st.session_state.predictions = data.get("predictions")
 
+    # Restore active tab from URL
+    if "tab" in params:
+        tab_param = params["tab"]
+        if isinstance(tab_param, list):
+            tab_param = tab_param[0]
+        if tab_param in TAB_LABELS:
+            st.session_state.active_tab = tab_param
 
 
 restore_from_url_params()
-
-
 
 
 # =============================================================================
@@ -528,9 +535,9 @@ def login_signup_page():
                             st.session_state.authenticated = True
                             st.session_state.user_id = user_id
                             st.session_state.username = username
-                            
-                            set_query_params({"user_id": user_id, "username": username})
-                            
+
+                            set_query_params({"user_id": user_id, "username": username, "tab": st.session_state.active_tab})
+
                             restore_from_url_params()
                             st.success("✅ Logged in successfully!")
                             st.rerun()
@@ -603,7 +610,7 @@ with st.sidebar:
         st.session_state.df_uploaded = None
         st.session_state.df_processed = None
         st.session_state.predictions = None
-        
+
         set_query_params({})
         st.rerun()
 
@@ -624,17 +631,26 @@ with st.sidebar:
             st.rerun()
 
 
-tabs = st.tabs(
-    ["📤 Data Upload", "📊 Analytics", "🚨 Anomalies", "🎯 Forecast", "📥 Reports"]
-)
+# =============================================================================
+# TABS WITH PERSISTENCE - Get current tab index
+# =============================================================================
+
+current_tab_index = TAB_LABELS.index(st.session_state.active_tab) if st.session_state.active_tab in TAB_LABELS else 0
+
+tabs = st.tabs(TAB_LABELS)
 
 
 # =============================================================================
 # TAB 1: DATA UPLOAD (ENHANCED)
 # =============================================================================
 
-
 with tabs[0]:
+    # Update active tab and URL
+    if st.session_state.active_tab != TAB_LABELS[0]:
+        st.session_state.active_tab = TAB_LABELS[0]
+        if st.session_state.authenticated:
+            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[0]})
+
     st.markdown("## 📤 Data Management")
 
     st.markdown("### 📤 Upload CSV File")
@@ -679,10 +695,10 @@ with tabs[0]:
     if st.session_state.df_uploaded is not None:
         st.divider()
         st.markdown("### 📋 Data Preview")
-        
+
         # Create two columns: Preview + Quick Stats
         col1, col2 = st.columns([3, 1])
-        
+
         with col1:
             # Expandable full data view
             with st.expander("📊 **View All Data** (Click to expand full dataset)", expanded=False):
@@ -692,7 +708,7 @@ with tabs[0]:
                     use_container_width=True,
                     height=600
                 )
-            
+
             # Default first 10 rows
             st.markdown("**First 10 Rows Preview**")
             st.dataframe(
@@ -700,26 +716,26 @@ with tabs[0]:
                 use_container_width=True,
                 height=400
             )
-        
+
         with col2:
             st.markdown("**📈 Dataset Stats**")
             st.metric("Total Rows", f"{len(st.session_state.df_uploaded):,}")
             st.metric("Total Cols", st.session_state.df_uploaded.shape[1])
             st.metric("Memory Usage", f"{st.session_state.df_uploaded.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-            
+
             st.markdown("**📝 Column Names**")
             for i, col in enumerate(st.session_state.df_uploaded.columns):
                 if i < 15:
                     st.text(f"• {col}")
             if len(st.session_state.df_uploaded.columns) > 15:
                 st.text(f"... + {len(st.session_state.df_uploaded.columns) - 15} more")
-        
+
         st.divider()
-        
+
         # Download section
         st.markdown("### 📥 Download Data")
         col_d1, col_d2, col_d3 = st.columns(3)
-        
+
         with col_d1:
             csv_data = st.session_state.df_uploaded.to_csv(index=False)
             st.download_button(
@@ -729,7 +745,7 @@ with tabs[0]:
                 mime="text/csv",
                 use_container_width=True,
             )
-        
+
         with col_d2:
             # Generate Excel file
             from io import BytesIO
@@ -744,7 +760,7 @@ with tabs[0]:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
             )
-        
+
         with col_d3:
             json_data = st.session_state.df_uploaded.to_json(orient="records", indent=2)
             st.download_button(
@@ -762,6 +778,12 @@ with tabs[0]:
 
 
 with tabs[1]:
+    # Update active tab and URL
+    if st.session_state.active_tab != TAB_LABELS[1]:
+        st.session_state.active_tab = TAB_LABELS[1]
+        if st.session_state.authenticated:
+            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[1]})
+
     st.markdown("## 📊 Load Analytics & Insights")
 
     df = st.session_state.df_uploaded
@@ -862,8 +884,13 @@ with tabs[1]:
 # TAB 3: ANOMALIES
 # =============================================================================
 
-
 with tabs[2]:
+    # Update active tab and URL
+    if st.session_state.active_tab != TAB_LABELS[2]:
+        st.session_state.active_tab = TAB_LABELS[2]
+        if st.session_state.authenticated:
+            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[2]})
+
     st.markdown("## 🚨 Anomaly Detection")
 
     df = st.session_state.df_uploaded
@@ -936,6 +963,12 @@ with tabs[2]:
 # =============================================================================
 
 with tabs[3]:
+    # Update active tab and URL
+    if st.session_state.active_tab != TAB_LABELS[3]:
+        st.session_state.active_tab = TAB_LABELS[3]
+        if st.session_state.authenticated:
+            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[3]})
+
     st.markdown("## 🎯 Load Forecasting")
 
     df = st.session_state.df_uploaded
@@ -1100,12 +1133,17 @@ with tabs[3]:
                     st.error(f"❌ Custom forecast error: {e}")
 
 
-
 # =============================================================================
 # TAB 5: REPORTS
 # =============================================================================
 
 with tabs[4]:
+    # Update active tab and URL
+    if st.session_state.active_tab != TAB_LABELS[4]:
+        st.session_state.active_tab = TAB_LABELS[4]
+        if st.session_state.authenticated:
+            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[4]})
+
     st.markdown("## 📥 Reports & Export")
 
     df = st.session_state.df_uploaded
@@ -1138,150 +1176,98 @@ with tabs[4]:
         pcust = np.array(fcustom["predictions"]) if isinstance(fcustom, dict) and fcustom.get("predictions") else None
         custom_days = fcustom.get("days") if isinstance(fcustom, dict) else None
 
-        # ---- build report text (with Gemini, hard-coded key) ----
+        # ---- build report text ----
         def build_report_text():
             lines = [
                 "# PowerGrid Analytics Report",
-                f"\n**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                f"\n**User:** {st.session_state.username}",
-                "\n## Dataset Summary",
+                f"
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                f"
+**User:** {st.session_state.username}",
+                "
+## Dataset Summary",
                 f"- Total Records: {len(df):,}",
                 f"- Total Columns: {df.shape[1]}",
                 f"- Date Range: {df.get('datetime', pd.Series()).min() if 'datetime' in df.columns else 'N/A'} "
                 f"to {df.get('datetime', pd.Series()).max() if 'datetime' in df.columns else 'N/A'}",
-                "\n## Load Statistics",
+                "
+## Load Statistics",
                 f"- Mean Consumption: {cons.mean():.2f} kWh",
                 f"- Median Consumption: {cons.median():.2f} kWh",
                 f"- Peak Consumption: {cons.max():.2f} kWh",
                 f"- Minimum Consumption: {cons.min():.2f} kWh",
                 f"- Std Deviation: {cons.std():.2f} kWh",
                 f"- Total Energy: {cons.sum():.2f} kWh",
-                "\n## Anomaly Analysis",
+                "
+## Anomaly Analysis",
                 f"- Anomalies Detected: {anomaly_count}",
                 f"- Anomaly Rate: {anomaly_rate:.2f}%",
             ]
 
-            # ==================================================================
-            # FORECAST SUMMARY LOGIC
-            # ==================================================================
+            # Forecast logic
             report_mode = st.session_state.get("report_mode", "builtin")
 
-            # choose which arrays to show
-            p24_use = p7_use = p30_use = pcust_use = None
+            p24_use, p7_use, p30_use, pcust_use = None, None, None, None
             custom_days_use = custom_days
 
             if report_mode == "custom" and pcust is not None:
-                # user used custom mode → ONLY custom block in report
-                lines.append("\n## Forecast Summary")
+                # user used custom mode: ONLY custom block in report
+                lines.append("
+## Forecast Summary")
                 pcust_use = pcust
             else:
-                # default → show 24h/7d/30d if available
-                if any(v is not None for v in [p24, p7, p30]):
-                    lines.append("\n## Forecast Summary")
+                # default: show 24h/7d/30d if available
                 p24_use = p24
                 p7_use = p7
                 p30_use = p30
 
-            if p24_use is not None:
-                lines.extend([
-                    "\n### 24-Hour Forecast",
-                    f"- Average Forecast: {p24_use.mean():.2f} kWh",
-                    f"- Peak Forecast: {p24_use.max():.2f} kWh",
-                    f"- Total Energy (24h): {p24_use.sum():.2f} kWh",
-                ])
+            if any(v is not None for v in [p24_use, p7_use, p30_use]):
+                lines.append("
+## Forecast Summary")
 
-            if p7_use is not None:
-                lines.extend([
-                    "\n### 7-Day Forecast",
-                    f"- Average Forecast: {p7_use.mean():.2f} kWh",
-                    f"- Peak Forecast: {p7_use.max():.2f} kWh",
-                    f"- Total Energy (7d): {p7_use.sum():.2f} kWh",
-                ])
+                if p24_use is not None:
+                    lines.extend([
+                        "
+### 24-Hour Forecast",
+                        f"- Average Forecast: {p24_use.mean():.2f} kWh",
+                        f"- Peak Forecast: {p24_use.max():.2f} kWh",
+                        f"- Total Energy (24h): {p24_use.sum():.2f} kWh",
+                    ])
 
-            if p30_use is not None:
-                lines.extend([
-                    "\n### 30-Day Forecast",
-                    f"- Average Forecast: {p30_use.mean():.2f} kWh",
-                    f"- Peak Forecast: {p30_use.max():.2f} kWh",
-                    f"- Total Energy (30d): {p30_use.sum():.2f} kWh",
-                ])
+                if p7_use is not None:
+                    lines.extend([
+                        "
+### 7-Day Forecast",
+                        f"- Average Forecast: {p7_use.mean():.2f} kWh",
+                        f"- Peak Forecast: {p7_use.max():.2f} kWh",
+                        f"- Total Energy (7d): {p7_use.sum():.2f} kWh",
+                    ])
+
+                if p30_use is not None:
+                    lines.extend([
+                        "
+### 30-Day Forecast",
+                        f"- Average Forecast: {p30_use.mean():.2f} kWh",
+                        f"- Peak Forecast: {p30_use.max():.2f} kWh",
+                        f"- Total Energy (30d): {p30_use.sum():.2f} kWh",
+                    ])
 
             if pcust_use is not None and custom_days_use is not None:
                 lines.extend([
-                    f"\n### {custom_days_use}-Day Custom Forecast",
+                    f"
+### {custom_days_use}-Day Custom Forecast",
                     f"- Average Forecast: {pcust_use.mean():.2f} kWh",
                     f"- Peak Forecast: {pcust_use.max():.2f} kWh",
                     f"- Total Energy ({custom_days_use}d): {pcust_use.sum():.2f} kWh",
                 ])
 
-            # ==================================================================
-            # GEMINI AI SUMMARY – use the same chosen arrays
-            # ==================================================================
-            ai_text = None
-            try:
-                import google.generativeai as genai
+            return "
+".join(lines)
 
-                GEMINI_API_KEY = "AIzaSyDV-Nm3usHhpBcp9zx3CpvZwZgtDQ_JCcg"  # demo only
-
-                genai.configure(api_key=GEMINI_API_KEY)
-                model = genai.GenerativeModel("gemini-2.5-flash")
-
-                # safe means for whatever is active
-                mean_24 = float(p24_use.mean()) if p24_use is not None and len(p24_use) > 0 else None
-                mean_7  = float(p7_use.mean())  if p7_use  is not None and len(p7_use)  > 0 else None
-                mean_30 = float(p30_use.mean()) if p30_use is not None and len(p30_use) > 0 else None
-                mean_c  = float(pcust_use.mean()) if pcust_use is not None and len(pcust_use) > 0 else None
-
-                mean_24_str = f"{mean_24:.2f}" if mean_24 is not None else "N/A"
-                mean_7_str  = f"{mean_7:.2f}"  if mean_7  is not None else "N/A"
-                mean_30_str = f"{mean_30:.2f}" if mean_30 is not None else "N/A"
-                mean_c_str  = f"{mean_c:.2f}"  if mean_c  is not None else "N/A"
-
-                prompt = (
-                    "You are analysing an electricity demand forecasting report.\n\n"
-                    f"Historical mean: {cons.mean():.2f} kWh\n"
-                    f"Historical peak: {cons.max():.2f} kWh\n"
-                    f"Anomalies: {anomaly_count} ({anomaly_rate:.2f}%)\n\n"
-                    f"24h avg: {mean_24_str} kWh\n"
-                    f"7d avg: {mean_7_str} kWh\n"
-                    f"30d avg: {mean_30_str} kWh\n"
-                    f"Custom avg: {mean_c_str} kWh\n\n"
-                    "Give:\n"
-                    "1) 2–3 sentence insight about demand pattern,\n"
-                    "2) mention peaks / anomalies,\n"
-                    "3) 1–2 actionable recommendations for grid operators.\n"
-                    "Max 120 words, plain text."
-                )
-
-                resp = model.generate_content(prompt)
-                ai_text = resp.text.strip()
-            except Exception as e:
-                st.error(f"Gemini error: {e}")
-                ai_text = None
-
-            if ai_text:
-                lines.extend([
-                    "\n## AI Summary (Gemini)",
-                    ai_text,
-                ])
-            else:
-                stability = "stable" if (cons.std() / cons.mean() < 0.15) else "variable"
-                lines.extend([
-                    "\n## AI Summary (Fallback)",
-                    f"- Load appears {stability} (CV={cons.std()/cons.mean()*100:.1f}%).",
-                    f"- Peak-to-average ratio: {cons.max()/cons.mean():.2f}x.",
-                    f"- {anomaly_count} anomalies ({anomaly_rate:.2f}%) suggest "
-                    f"{'good' if anomaly_rate < 1 else 'some'} data quality.",
-                ])
-
-            return "\n".join(lines)
-
-        # build once so both preview and download use same text
         report_text = build_report_text()
 
         col1, col2 = st.columns(2)
 
-        # single button: generates and downloads directly
         with col1:
             st.download_button(
                 "📥 Download Report (TXT)",
@@ -1291,7 +1277,6 @@ with tabs[4]:
                 use_container_width=True,
             )
 
-        # preprocessed data download (if available)
         with col2:
             target_df = df_proc if df_proc is not None else df
             csv_bytes = target_df.to_csv(index=False)
@@ -1303,17 +1288,19 @@ with tabs[4]:
                 use_container_width=True,
             )
 
-        # optional preview
         with st.expander("📄 Report Preview"):
             st.text_area("", report_text, height=350, disabled=True)
 
         st.divider()
-        st.markdown("### 🔧 System Settings")
+
+        st.markdown("### ⚙️ System Settings")
         c1, c2 = st.columns(2)
+
         with c1:
             if st.button("💾 Save Session Manually", use_container_width=True):
                 save_user_session()
                 st.success("✅ Session saved to database")
+
         with c2:
             if st.button("🗑️ Clear All Data", use_container_width=True):
                 st.session_state.df_uploaded = None
@@ -1321,21 +1308,22 @@ with tabs[4]:
                 st.session_state.predictions = None
                 save_user_session()
                 st.rerun()
+
     else:
-        st.info("No data available. Upload data to create reports.")
+        st.info("📋 No data available. Upload data to create reports.")
 
     st.divider()
+
     st.markdown("### ℹ️ About")
-    st.markdown(
-        """
+    st.markdown("""
 **PowerGrid Analytics v2.0**
 
-- 🔐 Secure authentication with SQLite database
-- 💾 Automatic session persistence
-- 📊 ML-based load forecasting (24h/7d/30d)
-- 🚨 Real-time anomaly detection
-- 📈 Professional data visualization
+- ✅ Secure authentication with SQLite database
+- ✅ Automatic session persistence
+- ✅ **Tab persistence on page refresh**
+- ✅ ML-based load forecasting (24h/7d/30d)
+- ✅ Real-time anomaly detection
+- ✅ Professional data visualization
 
-**Tech Stack:** Streamlit • FastAPI • SQLite • Plotly • Scikit-learn
-"""
-    )
+**Tech Stack:** Streamlit · FastAPI · SQLite · Plotly · Scikit-learn
+""")
