@@ -1178,19 +1178,26 @@ with tabs[4]:
 
         # ---- build report text ----
         def build_report_text():
-            lines = [
-                "# PowerGrid Analytics Report",
-                f"
-**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                f"
-**User:** {st.session_state.username}",
-                "
-## Dataset Summary",
-                f"- Total Records: {len(df):,}",
-                f"- Total Columns: {df.shape[1]}",
-                f"- Date Range: {df.get('datetime', pd.Series()).min() if 'datetime' in df.columns else 'N/A'} "
-                f"to {df.get('datetime', pd.Series()).max() if 'datetime' in df.columns else 'N/A'}",
-                "
+                    lines = [
+            "# PowerGrid Analytics Report",
+            f"\n**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"\n**User:** {st.session_state.username}",
+            "\n## Dataset Summary",
+            f"- Total Records: {len(df):,}",
+            f"- Total Columns: {df.shape[1]}",
+        ]
+        
+        # Handle date range safely
+        if 'datetime' in df.columns:
+            date_min = str(df['datetime'].min())
+            date_max = str(df['datetime'].max())
+            lines.append(f"- Date Range: {date_min} to {date_max}")
+        else:
+            lines.append("- Date Range: N/A")
+        
+        lines.extend([
+            "\n## Load Statistics",
+
 ## Load Statistics",
                 f"- Mean Consumption: {cons.mean():.2f} kWh",
                 f"- Median Consumption: {cons.median():.2f} kWh",
