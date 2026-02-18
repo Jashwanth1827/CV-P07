@@ -40,11 +40,6 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-/* Hide entire header (top bar with Fork/GitHub) */
-header {
-    visibility: hidden !important;
-}
-
 /* Hide toolbar container */
 [data-testid="stToolbar"] {
     display: none !important;
@@ -55,9 +50,9 @@ button[kind="header"] {
     display: none !important;
 }
 
-/* Hide hamburger menu */
+/* Hide hamburger menu icon (but keep sidebar functionality) */
 #MainMenu {
-    display: none !important;
+    visibility: hidden !important;
 }
 
 /* Hide footer */
@@ -78,6 +73,16 @@ div[data-testid="stStatusWidget"] {
 /* Extra aggressive fallback */
 .stDeployButton {
     display: none !important;
+}
+
+/* Keep sidebar toggle but hide header branding */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+}
+
+/* Hide the actual Streamlit icon/text in header */
+header[data-testid="stHeader"] > div:first-child {
+    visibility: hidden !important;
 }
 
 </style>
@@ -597,6 +602,7 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
 
 
 with st.sidebar:
