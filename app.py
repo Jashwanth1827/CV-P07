@@ -1177,99 +1177,88 @@ with tabs[4]:
         custom_days = fcustom.get("days") if isinstance(fcustom, dict) else None
 
         # ---- build report text ----
+                # ---- build report text ----
         def build_report_text():
-                    lines = [
-            "# PowerGrid Analytics Report",
-            f"\n**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            f"\n**User:** {st.session_state.username}",
-            "\n## Dataset Summary",
-            f"- Total Records: {len(df):,}",
-            f"- Total Columns: {df.shape[1]}",
-        ]
-        
-        # Handle date range safely
-        if 'datetime' in df.columns:
-            date_min = str(df['datetime'].min())
-            date_max = str(df['datetime'].max())
-            lines.append(f"- Date Range: {date_min} to {date_max}")
-        else:
-            lines.append("- Date Range: N/A")
-        
-        lines.extend([
-            "\n## Load Statistics",
-
-## Load Statistics",
+            lines = [
+                "# PowerGrid Analytics Report",
+                f"\n**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                f"\n**User:** {st.session_state.username}",
+                "\n## Dataset Summary",
+                f"- Total Records: {len(df):,}",
+                f"- Total Columns: {df.shape[1]}",
+            ]
+            
+            # Handle date range safely
+            if 'datetime' in df.columns:
+                date_min = str(df['datetime'].min())
+                date_max = str(df['datetime'].max())
+                lines.append(f"- Date Range: {date_min} to {date_max}")
+            else:
+                lines.append("- Date Range: N/A")
+            
+            lines.extend([
+                "\n## Load Statistics",
                 f"- Mean Consumption: {cons.mean():.2f} kWh",
                 f"- Median Consumption: {cons.median():.2f} kWh",
                 f"- Peak Consumption: {cons.max():.2f} kWh",
                 f"- Minimum Consumption: {cons.min():.2f} kWh",
                 f"- Std Deviation: {cons.std():.2f} kWh",
                 f"- Total Energy: {cons.sum():.2f} kWh",
-                "
-## Anomaly Analysis",
+                "\n## Anomaly Analysis",
                 f"- Anomalies Detected: {anomaly_count}",
                 f"- Anomaly Rate: {anomaly_rate:.2f}%",
-            ]
+            ])
 
             # Forecast logic
             report_mode = st.session_state.get("report_mode", "builtin")
-
+            
             p24_use, p7_use, p30_use, pcust_use = None, None, None, None
             custom_days_use = custom_days
-
+            
             if report_mode == "custom" and pcust is not None:
-                # user used custom mode: ONLY custom block in report
-                lines.append("
-## Forecast Summary")
                 pcust_use = pcust
             else:
-                # default: show 24h/7d/30d if available
                 p24_use = p24
                 p7_use = p7
                 p30_use = p30
-
+            
             if any(v is not None for v in [p24_use, p7_use, p30_use]):
-                lines.append("
-## Forecast Summary")
-
+                lines.append("\n## Forecast Summary")
+                
                 if p24_use is not None:
                     lines.extend([
-                        "
-### 24-Hour Forecast",
+                        "\n### 24-Hour Forecast",
                         f"- Average Forecast: {p24_use.mean():.2f} kWh",
                         f"- Peak Forecast: {p24_use.max():.2f} kWh",
                         f"- Total Energy (24h): {p24_use.sum():.2f} kWh",
                     ])
-
+                
                 if p7_use is not None:
                     lines.extend([
-                        "
-### 7-Day Forecast",
+                        "\n### 7-Day Forecast",
                         f"- Average Forecast: {p7_use.mean():.2f} kWh",
                         f"- Peak Forecast: {p7_use.max():.2f} kWh",
                         f"- Total Energy (7d): {p7_use.sum():.2f} kWh",
                     ])
-
+                
                 if p30_use is not None:
                     lines.extend([
-                        "
-### 30-Day Forecast",
+                        "\n### 30-Day Forecast",
                         f"- Average Forecast: {p30_use.mean():.2f} kWh",
                         f"- Peak Forecast: {p30_use.max():.2f} kWh",
                         f"- Total Energy (30d): {p30_use.sum():.2f} kWh",
                     ])
-
+            
             if pcust_use is not None and custom_days_use is not None:
                 lines.extend([
-                    f"
-### {custom_days_use}-Day Custom Forecast",
+                    f"\n### {custom_days_use}-Day Custom Forecast",
                     f"- Average Forecast: {pcust_use.mean():.2f} kWh",
                     f"- Peak Forecast: {pcust_use.max():.2f} kWh",
                     f"- Total Energy ({custom_days_use}d): {pcust_use.sum():.2f} kWh",
                 ])
 
-            return "
-".join(lines)
+            return "\n".join(lines)
+
 
         report_text = build_report_text()
 
