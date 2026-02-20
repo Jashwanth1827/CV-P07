@@ -1,4 +1,4 @@
-# app_v2.py - ENHANCED DATA PREVIEW WITH TAB PERSISTENCE
+# app_v2.py - ENHANCED DATA PREVIEW
 # PowerGrid Analytics - Production Grade with Full-Screen Data View
 
 import streamlit as st
@@ -30,56 +30,59 @@ init_db()
 
 
 st.set_page_config(
-    page_title="⚡ PowerGrid Analytics",
-    page_icon="⚡",
+    page_title="âš¡ PowerGrid Analytics",
+    page_icon="âš¡",
     layout="wide",
-    initial_sidebar_state="auto",  # ← This works better with CSS
+    initial_sidebar_state="expanded",
 )
-
-# EMERGENCY LOGOUT - Top-right corner
-col1, col2, col3 = st.columns([1, 1, 1])
-with col3:
-    if st.button("🚪 Logout", key="emergency_logout"):
-        save_user_session()
-        for key in st.session_state:
-            del st.session_state[key]
-        st.rerun()
-
 # Hide Streamlit toolbar and footer
-# 🔥 Hide ALL Streamlit branding (Toolbar, GitHub, Fork, Footer, Badge)
+# ðŸ”¥ Hide ALL Streamlit branding (Toolbar, GitHub, Fork, Footer, Badge)
 st.markdown("""
 <style>
-/* FORCE SIDEBAR VISIBLE - Critical for logout access */
-section[data-testid="stSidebar"] {
-    position: relative !important;
-    width: 280px !important;
-    visibility: visible !important;
-    display: block !important;
-}
 
-/* Keep sidebar toggle button */
-[data-testid="collapsedControl"] {
-    display: block !important;
-    visibility: visible !important;
-}
-
-/* Hide branding ONLY - keep functional elements */
-[data-testid="stToolbar"] { display: none !important; }
-button[kind="header"] { display: none !important; }
-footer { visibility: hidden !important; }
-[data-testid="stDecoration"] { display: none !important; }
-div[data-testid="stStatusWidget"] { display: none !important; }
-.stDeployButton { display: none !important; }
-
-/* Hide header text but keep toggle */
-header[data-testid="stHeader"] {
-    background: transparent !important;
-}
-header[data-testid="stHeader"] > div:first-child {
+/* Hide entire header (top bar with Fork/GitHub) */
+header {
     visibility: hidden !important;
 }
+
+/* Hide toolbar container */
+[data-testid="stToolbar"] {
+    display: none !important;
+}
+
+/* Hide GitHub / Fork buttons */
+button[kind="header"] {
+    display: none !important;
+}
+
+/* Hide hamburger menu */
+#MainMenu {
+    display: none !important;
+}
+
+/* Hide footer */
+footer {
+    visibility: hidden !important;
+}
+
+/* Hide bottom-right Streamlit badge */
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
+/* Hide floating status widget */
+div[data-testid="stStatusWidget"] {
+    display: none !important;
+}
+
+/* Extra aggressive fallback */
+.stDeployButton {
+    display: none !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
@@ -327,11 +330,6 @@ if "predictions" not in st.session_state:
 if "show_signup" not in st.session_state:
     st.session_state.show_signup = False
 
-# TAB PERSISTENCE - Initialize active tab
-TAB_LABELS = ["📤 Data Upload", "📊 Analytics", "🚨 Anomalies", "🎯 Forecast", "📥 Reports"]
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = TAB_LABELS[0]
-
 
 # =============================================================================
 # RESTORE LOGIN FROM URL PARAMS (survives F5/Cmd+R)
@@ -371,9 +369,10 @@ def set_query_params(params):
             pass
 
 
+
 def restore_from_url_params():
     """
-    Restore login and active tab from URL only if not already logged in.
+    Restore login from URL only if not already logged in.
     """
     if st.session_state.authenticated:
         return
@@ -399,16 +398,11 @@ def restore_from_url_params():
             st.session_state.df_processed = data.get("df_processed")
             st.session_state.predictions = data.get("predictions")
 
-    # Restore active tab from URL
-    if "tab" in params:
-        tab_param = params["tab"]
-        if isinstance(tab_param, list):
-            tab_param = tab_param[0]
-        if tab_param in TAB_LABELS:
-            st.session_state.active_tab = tab_param
 
 
 restore_from_url_params()
+
+
 
 
 # =============================================================================
@@ -510,7 +504,7 @@ def login_signup_page():
             """
 <div class="auth-container">
   <div class="auth-header">
-    <h2>⚡ PowerGrid</h2>
+    <h2>âš¡ PowerGrid</h2>
     <p>Energy Load Forecasting & Anomaly Detection</p>
   </div>
 </div>
@@ -519,50 +513,50 @@ def login_signup_page():
         )
 
         if not st.session_state.show_signup:
-            st.markdown("### 🔐 Login")
-            username = st.text_input("👤 Username", key="login_username")
-            password = st.text_input("🔑 Password", type="password", key="login_password")
+            st.markdown("### ðŸ” Login")
+            username = st.text_input("ðŸ‘¤ Username", key="login_username")
+            password = st.text_input("ðŸ”‘ Password", type="password", key="login_password")
 
             col_a, col_b = st.columns(2)
             with col_a:
                 if st.button("Login", use_container_width=True):
                     if not username or not password:
-                        st.error("⚠️ Enter username and password")
+                        st.error("âš ï¸ Enter username and password")
                     else:
                         success, user_id = authenticate_user(username, password)
                         if success:
                             st.session_state.authenticated = True
                             st.session_state.user_id = user_id
                             st.session_state.username = username
-
-                            set_query_params({"user_id": user_id, "username": username, "tab": st.session_state.active_tab})
-
+                            
+                            set_query_params({"user_id": user_id, "username": username})
+                            
                             restore_from_url_params()
-                            st.success("✅ Logged in successfully!")
+                            st.success("âœ… Logged in successfully!")
                             st.rerun()
                         else:
-                            st.error("❌ Invalid username or password")
+                            st.error("âŒ Invalid username or password")
             with col_b:
                 if st.button("Create Account", use_container_width=True):
                     st.session_state.show_signup = True
                     st.rerun()
 
         else:
-            st.markdown("### 📝 Create Account")
-            new_username = st.text_input("👤 Username", key="signup_username")
-            new_email = st.text_input("📧 Email", key="signup_email")
-            new_password = st.text_input("🔑 Password", type="password", key="signup_password")
+            st.markdown("### ðŸ“ Create Account")
+            new_username = st.text_input("ðŸ‘¤ Username", key="signup_username")
+            new_email = st.text_input("ðŸ“§ Email", key="signup_email")
+            new_password = st.text_input("ðŸ”‘ Password", type="password", key="signup_password")
             confirm_password = st.text_input(
-                "🔑 Confirm Password", type="password", key="confirm_password"
+                "ðŸ”‘ Confirm Password", type="password", key="confirm_password"
             )
 
             col_a, col_b = st.columns(2)
             with col_a:
                 if st.button("Sign Up", use_container_width=True):
                     if not new_username or not new_email or not new_password:
-                        st.error("⚠️ Fill all fields")
+                        st.error("âš ï¸ Fill all fields")
                     elif new_password != confirm_password:
-                        st.error("❌ Passwords don't match")
+                        st.error("âŒ Passwords don't match")
                     else:
                         success, msg = register_user(new_username, new_email, new_password)
                         if success:
@@ -590,7 +584,7 @@ if not st.session_state.authenticated:
 st.markdown(
     """
 <div class="header-container">
-  <h1>⚡ PowerGrid Analytics</h1>
+  <h1>âš¡ PowerGrid Analytics</h1>
   <p>Smart Energy Load Forecasting & Real-time Anomaly Detection</p>
 </div>
 """,
@@ -598,11 +592,10 @@ st.markdown(
 )
 
 
-
 with st.sidebar:
-    st.markdown(f"### 👤 Welcome, **{st.session_state.username}**!")
+    st.markdown(f"### ðŸ‘¤ Welcome, **{st.session_state.username}**!")
 
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("ðŸšª Logout", use_container_width=True):
         save_user_session()
         st.session_state.authenticated = False
         st.session_state.user_id = None
@@ -610,7 +603,7 @@ with st.sidebar:
         st.session_state.df_uploaded = None
         st.session_state.df_processed = None
         st.session_state.predictions = None
-
+        
         set_query_params({})
         st.rerun()
 
@@ -618,12 +611,12 @@ with st.sidebar:
 
     if st.session_state.df_uploaded is not None:
         st.divider()
-        st.markdown("### 📈 Dataset Info")
+        st.markdown("### ðŸ“ˆ Dataset Info")
         st.metric("Records", f"{len(st.session_state.df_uploaded):,}")
         st.metric("Columns", st.session_state.df_uploaded.shape[1])
         st.metric("Memory", f"{st.session_state.df_uploaded.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
 
-        if st.button("🗑️ Clear Data", use_container_width=True):
+        if st.button("ðŸ—‘ï¸ Clear Data", use_container_width=True):
             st.session_state.df_uploaded = None
             st.session_state.df_processed = None
             st.session_state.predictions = None
@@ -631,29 +624,20 @@ with st.sidebar:
             st.rerun()
 
 
-# =============================================================================
-# TABS WITH PERSISTENCE - Get current tab index
-# =============================================================================
-
-current_tab_index = TAB_LABELS.index(st.session_state.active_tab) if st.session_state.active_tab in TAB_LABELS else 0
-
-tabs = st.tabs(TAB_LABELS)
+tabs = st.tabs(
+    ["ðŸ“¤ Data Upload", "ðŸ“Š Analytics", "ðŸš¨ Anomalies", "ðŸŽ¯ Forecast", "ðŸ“¥ Reports"]
+)
 
 
 # =============================================================================
 # TAB 1: DATA UPLOAD (ENHANCED)
 # =============================================================================
 
+
 with tabs[0]:
-    # Update active tab and URL
-    if st.session_state.active_tab != TAB_LABELS[0]:
-        st.session_state.active_tab = TAB_LABELS[0]
-        if st.session_state.authenticated:
-            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[0]})
+    st.markdown("## ðŸ“¤ Data Management")
 
-    st.markdown("## 📤 Data Management")
-
-    st.markdown("### 📤 Upload CSV File")
+    st.markdown("### ðŸ“¤ Upload CSV File")
     st.info(
         "Upload your smart meter data. Supported formats: CSV files with "
         "electricity consumption, date/time, and optional weather data."
@@ -665,50 +649,50 @@ with tabs[0]:
 
     if uploaded is not None:
         with st.spinner("Processing..."):
-            prog = st.progress(0, text="🔄 Reading file...")
+            prog = st.progress(0, text="ðŸ”„ Reading file...")
             try:
                 try:
                     df = pd.read_csv(uploaded, on_bad_lines="skip")
                 except TypeError:
                     df = pd.read_csv(uploaded)
 
-                prog.progress(25, text="📋 Validating structure...")
+                prog.progress(25, text="ðŸ“‹ Validating structure...")
                 df = ensure_required_columns(df)
 
-                prog.progress(50, text="🧹 Imputing missing values...")
+                prog.progress(50, text="ðŸ§¹ Imputing missing values...")
                 df = impute_missing_values(df)
 
-                prog.progress(75, text="⚙️ Normalizing features...")
+                prog.progress(75, text="âš™ï¸ Normalizing features...")
                 df_proc = preprocess_numeric(df)
 
-                prog.progress(100, text="✅ Complete!")
+                prog.progress(100, text="âœ… Complete!")
                 st.session_state.df_uploaded = df
                 st.session_state.df_processed = df_proc
                 save_user_session()
-                st.success("✅ Data uploaded and preprocessed!")
+                st.success("âœ… Data uploaded and preprocessed!")
 
             except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+                st.error(f"âŒ Error: {str(e)}")
             finally:
                 prog.empty()
 
     if st.session_state.df_uploaded is not None:
         st.divider()
-        st.markdown("### 📋 Data Preview")
-
+        st.markdown("### ðŸ“‹ Data Preview")
+        
         # Create two columns: Preview + Quick Stats
         col1, col2 = st.columns([3, 1])
-
+        
         with col1:
             # Expandable full data view
-            with st.expander("📊 **View All Data** (Click to expand full dataset)", expanded=False):
+            with st.expander("ðŸ“Š **View All Data** (Click to expand full dataset)", expanded=False):
                 st.markdown("**Complete Dataset - Scroll to see all rows and columns**")
                 st.dataframe(
                     st.session_state.df_uploaded,
                     use_container_width=True,
                     height=600
                 )
-
+            
             # Default first 10 rows
             st.markdown("**First 10 Rows Preview**")
             st.dataframe(
@@ -716,36 +700,36 @@ with tabs[0]:
                 use_container_width=True,
                 height=400
             )
-
+        
         with col2:
-            st.markdown("**📈 Dataset Stats**")
+            st.markdown("**ðŸ“ˆ Dataset Stats**")
             st.metric("Total Rows", f"{len(st.session_state.df_uploaded):,}")
             st.metric("Total Cols", st.session_state.df_uploaded.shape[1])
             st.metric("Memory Usage", f"{st.session_state.df_uploaded.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
-
-            st.markdown("**📝 Column Names**")
+            
+            st.markdown("**ðŸ“ Column Names**")
             for i, col in enumerate(st.session_state.df_uploaded.columns):
                 if i < 15:
-                    st.text(f"• {col}")
+                    st.text(f"â€¢ {col}")
             if len(st.session_state.df_uploaded.columns) > 15:
                 st.text(f"... + {len(st.session_state.df_uploaded.columns) - 15} more")
-
+        
         st.divider()
-
+        
         # Download section
-        st.markdown("### 📥 Download Data")
+        st.markdown("### ðŸ“¥ Download Data")
         col_d1, col_d2, col_d3 = st.columns(3)
-
+        
         with col_d1:
             csv_data = st.session_state.df_uploaded.to_csv(index=False)
             st.download_button(
-                "📥 CSV",
+                "ðŸ“¥ CSV",
                 data=csv_data,
                 file_name=f"powergrid_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
                 use_container_width=True,
             )
-
+        
         with col_d2:
             # Generate Excel file
             from io import BytesIO
@@ -754,17 +738,17 @@ with tabs[0]:
                 st.session_state.df_uploaded.to_excel(writer, index=False)
             excel_buffer.seek(0)
             st.download_button(
-                "📥 Excel",
+                "ðŸ“¥ Excel",
                 data=excel_buffer.getvalue(),
                 file_name=f"powergrid_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
             )
-
+        
         with col_d3:
             json_data = st.session_state.df_uploaded.to_json(orient="records", indent=2)
             st.download_button(
-                "📥 JSON",
+                "ðŸ“¥ JSON",
                 data=json_data,
                 file_name=f"powergrid_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                 mime="application/json",
@@ -778,19 +762,13 @@ with tabs[0]:
 
 
 with tabs[1]:
-    # Update active tab and URL
-    if st.session_state.active_tab != TAB_LABELS[1]:
-        st.session_state.active_tab = TAB_LABELS[1]
-        if st.session_state.authenticated:
-            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[1]})
-
-    st.markdown("## 📊 Load Analytics & Insights")
+    st.markdown("## ðŸ“Š Load Analytics & Insights")
 
     df = st.session_state.df_uploaded
     if df is None:
-        st.info("👉 Upload data in the **Data Upload** tab first")
+        st.info("ðŸ‘‰ Upload data in the **Data Upload** tab first")
     else:
-        st.markdown("### 🎯 Key Metrics")
+        st.markdown("### ðŸŽ¯ Key Metrics")
         m1, m2, m3, m4 = st.columns(4)
 
         if "consumption" in df.columns:
@@ -802,7 +780,7 @@ with tabs[1]:
 
         st.divider()
 
-        st.markdown("### 📈 Load Patterns")
+        st.markdown("### ðŸ“ˆ Load Patterns")
         col1, col2 = st.columns(2)
 
         if "hour" in df.columns and "consumption" in df.columns:
@@ -856,7 +834,7 @@ with tabs[1]:
                 st.plotly_chart(fig_d, use_container_width=True)
 
         if "consumption" in df.columns:
-            st.markdown("### 📊 Load Distribution")
+            st.markdown("### ðŸ“Š Load Distribution")
             st.markdown(
                 "This histogram shows how electricity consumption is distributed. "
                 "A normal distribution suggests balanced load, while skewed patterns indicate specific usage behaviors."
@@ -884,14 +862,9 @@ with tabs[1]:
 # TAB 3: ANOMALIES
 # =============================================================================
 
-with tabs[2]:
-    # Update active tab and URL
-    if st.session_state.active_tab != TAB_LABELS[2]:
-        st.session_state.active_tab = TAB_LABELS[2]
-        if st.session_state.authenticated:
-            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[2]})
 
-    st.markdown("## 🚨 Anomaly Detection")
+with tabs[2]:
+    st.markdown("## ðŸš¨ Anomaly Detection")
 
     df = st.session_state.df_uploaded
     if df is None or "consumption" not in df.columns:
@@ -910,11 +883,11 @@ with tabs[2]:
         m1, m2, m3 = st.columns(3)
         m1.metric("Anomalies Detected", int(mask.sum()), f"{100*mask.mean():.2f}% of data")
         m2.metric("Normal Records", int(len(cons) - mask.sum()), "Regular patterns")
-        m3.metric("Anomaly Severity", f"{z.max():.2f}σ", "Highest deviation")
+        m3.metric("Anomaly Severity", f"{z.max():.2f}Ïƒ", "Highest deviation")
 
         st.divider()
 
-        st.markdown("### 📍 Anomaly Timeline")
+        st.markdown("### ðŸ“ Anomaly Timeline")
         st.markdown(
             "Red dots indicate unusual consumption values. "
             "Green dots represent normal consumption. Clusters of anomalies suggest systematic issues."
@@ -951,7 +924,7 @@ with tabs[2]:
         st.plotly_chart(fig, use_container_width=True)
 
         if anomalies.any():
-            st.markdown("### 🔍 Top Anomalies")
+            st.markdown("### ðŸ” Top Anomalies")
             df_an = pd.DataFrame(
                 {"Index": anomalies.index, "Consumption (kWh)": anomalies.values}
             ).sort_values("Consumption (kWh)", ascending=False).head(20)
@@ -963,17 +936,11 @@ with tabs[2]:
 # =============================================================================
 
 with tabs[3]:
-    # Update active tab and URL
-    if st.session_state.active_tab != TAB_LABELS[3]:
-        st.session_state.active_tab = TAB_LABELS[3]
-        if st.session_state.authenticated:
-            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[3]})
-
-    st.markdown("## 🎯 Load Forecasting")
+    st.markdown("## ðŸŽ¯ Load Forecasting")
 
     df = st.session_state.df_uploaded
     if df is None:
-        st.info("👉 Upload data in the **Data Upload** tab first")
+        st.info("ðŸ‘‰ Upload data in the **Data Upload** tab first")
     else:
         st.markdown(
             "**ML-based forecasting** predicts future electricity demand. "
@@ -1031,7 +998,7 @@ with tabs[3]:
                     st.session_state["predictions"] = preds_24
                     st.session_state["selected_horizon"] = "24 Hours"
                 except Exception as e:
-                    st.error(f"❌ Auto-forecast error: {e}")
+                    st.error(f"âŒ Auto-forecast error: {e}")
 
         # ---------- show chosen primary horizon from already stored forecasts ----------
         f24 = st.session_state.get("forecast_24h")
@@ -1047,7 +1014,7 @@ with tabs[3]:
             preds_show = f30["predictions"]
 
         if preds_show:
-            st.success(f"✅ Auto-forecast ready for {primary_horizon} ({len(preds_show)} points)")
+            st.success(f"âœ… Auto-forecast ready for {primary_horizon} ({len(preds_show)} points)")
 
             st.session_state["predictions"] = preds_show
             st.session_state["selected_horizon"] = primary_horizon
@@ -1059,7 +1026,7 @@ with tabs[3]:
             m4.metric("Total Energy", f"{np.sum(preds_show):.0f} kWh")
 
             st.divider()
-            st.markdown("### 📈 Forecast Curve")
+            st.markdown("### ðŸ“ˆ Forecast Curve")
 
             fig = go.Figure()
             fig.add_trace(
@@ -1089,7 +1056,7 @@ with tabs[3]:
             st.plotly_chart(fig, use_container_width=True)
 
         # ---------- OPTIONAL CUSTOM HORIZON (separate button) ----------
-        st.markdown("### 🔧 Optional Custom Horizon")
+        st.markdown("### ðŸ”§ Optional Custom Horizon")
 
         custom_days = st.number_input(
             "Extra forecast horizon (days, optional)",
@@ -1101,11 +1068,11 @@ with tabs[3]:
         )
 
         st.info(
-            "📌 Custom horizon = days × 24 hourly predictions. "
+            "ðŸ“Œ Custom horizon = days Ã— 24 hourly predictions. "
             "If you generate a custom forecast, the report will use ONLY that horizon."
         )
 
-        if st.button("📆 Generate Custom Forecast", use_container_width=True):
+        if st.button("ðŸ“† Generate Custom Forecast", use_container_width=True):
             with st.spinner(f"Computing forecast for {int(custom_days)} days..."):
                 try:
                     label = f"{int(custom_days)} Days"
@@ -1120,7 +1087,7 @@ with tabs[3]:
                     st.session_state["report_mode"] = "custom"
 
                     st.success(
-                        f"✅ Generated {len(preds_custom)} predictions for {int(custom_days)}-day horizon"
+                        f"âœ… Generated {len(preds_custom)} predictions for {int(custom_days)}-day horizon"
                     )
 
                     # (optional) quick stats display
@@ -1130,7 +1097,8 @@ with tabs[3]:
                     c3.metric("Min", f"{np.min(preds_custom):.0f} kWh")
                     c4.metric("Total", f"{np.sum(preds_custom):.0f} kWh")
                 except Exception as e:
-                    st.error(f"❌ Custom forecast error: {e}")
+                    st.error(f"âŒ Custom forecast error: {e}")
+
 
 
 # =============================================================================
@@ -1138,13 +1106,7 @@ with tabs[3]:
 # =============================================================================
 
 with tabs[4]:
-    # Update active tab and URL
-    if st.session_state.active_tab != TAB_LABELS[4]:
-        st.session_state.active_tab = TAB_LABELS[4]
-        if st.session_state.authenticated:
-            set_query_params({"user_id": st.session_state.user_id, "username": st.session_state.username, "tab": TAB_LABELS[4]})
-
-    st.markdown("## 📥 Reports & Export")
+    st.markdown("## ðŸ“¥ Reports & Export")
 
     df = st.session_state.df_uploaded
 
@@ -1156,7 +1118,7 @@ with tabs[4]:
         df_proc = st.session_state["df_processed"]
 
     if df is not None and "consumption" in df.columns:
-        st.markdown("### 📊 Summary Report")
+        st.markdown("### ðŸ“Š Summary Report")
 
         cons = df["consumption"].dropna()
         z = np.abs((cons - cons.mean()) / cons.std())
@@ -1176,8 +1138,7 @@ with tabs[4]:
         pcust = np.array(fcustom["predictions"]) if isinstance(fcustom, dict) and fcustom.get("predictions") else None
         custom_days = fcustom.get("days") if isinstance(fcustom, dict) else None
 
-        # ---- build report text ----
-                # ---- build report text ----
+        # ---- build report text (with Gemini, hard-coded key) ----
         def build_report_text():
             lines = [
                 "# PowerGrid Analytics Report",
@@ -1186,17 +1147,8 @@ with tabs[4]:
                 "\n## Dataset Summary",
                 f"- Total Records: {len(df):,}",
                 f"- Total Columns: {df.shape[1]}",
-            ]
-            
-            # Handle date range safely
-            if 'datetime' in df.columns:
-                date_min = str(df['datetime'].min())
-                date_max = str(df['datetime'].max())
-                lines.append(f"- Date Range: {date_min} to {date_max}")
-            else:
-                lines.append("- Date Range: N/A")
-            
-            lines.extend([
+                f"- Date Range: {df.get('datetime', pd.Series()).min() if 'datetime' in df.columns else 'N/A'} "
+                f"to {df.get('datetime', pd.Series()).max() if 'datetime' in df.columns else 'N/A'}",
                 "\n## Load Statistics",
                 f"- Mean Consumption: {cons.mean():.2f} kWh",
                 f"- Median Consumption: {cons.median():.2f} kWh",
@@ -1207,48 +1159,53 @@ with tabs[4]:
                 "\n## Anomaly Analysis",
                 f"- Anomalies Detected: {anomaly_count}",
                 f"- Anomaly Rate: {anomaly_rate:.2f}%",
-            ])
+            ]
 
-            # Forecast logic
+            # ==================================================================
+            # FORECAST SUMMARY LOGIC
+            # ==================================================================
             report_mode = st.session_state.get("report_mode", "builtin")
-            
-            p24_use, p7_use, p30_use, pcust_use = None, None, None, None
+
+            # choose which arrays to show
+            p24_use = p7_use = p30_use = pcust_use = None
             custom_days_use = custom_days
-            
+
             if report_mode == "custom" and pcust is not None:
+                # user used custom mode â†’ ONLY custom block in report
+                lines.append("\n## Forecast Summary")
                 pcust_use = pcust
             else:
+                # default â†’ show 24h/7d/30d if available
+                if any(v is not None for v in [p24, p7, p30]):
+                    lines.append("\n## Forecast Summary")
                 p24_use = p24
                 p7_use = p7
                 p30_use = p30
-            
-            if any(v is not None for v in [p24_use, p7_use, p30_use]):
-                lines.append("\n## Forecast Summary")
-                
-                if p24_use is not None:
-                    lines.extend([
-                        "\n### 24-Hour Forecast",
-                        f"- Average Forecast: {p24_use.mean():.2f} kWh",
-                        f"- Peak Forecast: {p24_use.max():.2f} kWh",
-                        f"- Total Energy (24h): {p24_use.sum():.2f} kWh",
-                    ])
-                
-                if p7_use is not None:
-                    lines.extend([
-                        "\n### 7-Day Forecast",
-                        f"- Average Forecast: {p7_use.mean():.2f} kWh",
-                        f"- Peak Forecast: {p7_use.max():.2f} kWh",
-                        f"- Total Energy (7d): {p7_use.sum():.2f} kWh",
-                    ])
-                
-                if p30_use is not None:
-                    lines.extend([
-                        "\n### 30-Day Forecast",
-                        f"- Average Forecast: {p30_use.mean():.2f} kWh",
-                        f"- Peak Forecast: {p30_use.max():.2f} kWh",
-                        f"- Total Energy (30d): {p30_use.sum():.2f} kWh",
-                    ])
-            
+
+            if p24_use is not None:
+                lines.extend([
+                    "\n### 24-Hour Forecast",
+                    f"- Average Forecast: {p24_use.mean():.2f} kWh",
+                    f"- Peak Forecast: {p24_use.max():.2f} kWh",
+                    f"- Total Energy (24h): {p24_use.sum():.2f} kWh",
+                ])
+
+            if p7_use is not None:
+                lines.extend([
+                    "\n### 7-Day Forecast",
+                    f"- Average Forecast: {p7_use.mean():.2f} kWh",
+                    f"- Peak Forecast: {p7_use.max():.2f} kWh",
+                    f"- Total Energy (7d): {p7_use.sum():.2f} kWh",
+                ])
+
+            if p30_use is not None:
+                lines.extend([
+                    "\n### 30-Day Forecast",
+                    f"- Average Forecast: {p30_use.mean():.2f} kWh",
+                    f"- Peak Forecast: {p30_use.max():.2f} kWh",
+                    f"- Total Energy (30d): {p30_use.sum():.2f} kWh",
+                ])
+
             if pcust_use is not None and custom_days_use is not None:
                 lines.extend([
                     f"\n### {custom_days_use}-Day Custom Forecast",
@@ -1257,69 +1214,128 @@ with tabs[4]:
                     f"- Total Energy ({custom_days_use}d): {pcust_use.sum():.2f} kWh",
                 ])
 
+            # ==================================================================
+            # GEMINI AI SUMMARY â€“ use the same chosen arrays
+            # ==================================================================
+            ai_text = None
+            try:
+                import google.generativeai as genai
+
+                GEMINI_API_KEY = "AIzaSyDV-Nm3usHhpBcp9zx3CpvZwZgtDQ_JCcg"  # demo only
+
+                genai.configure(api_key=GEMINI_API_KEY)
+                model = genai.GenerativeModel("gemini-2.5-flash")
+
+                # safe means for whatever is active
+                mean_24 = float(p24_use.mean()) if p24_use is not None and len(p24_use) > 0 else None
+                mean_7  = float(p7_use.mean())  if p7_use  is not None and len(p7_use)  > 0 else None
+                mean_30 = float(p30_use.mean()) if p30_use is not None and len(p30_use) > 0 else None
+                mean_c  = float(pcust_use.mean()) if pcust_use is not None and len(pcust_use) > 0 else None
+
+                mean_24_str = f"{mean_24:.2f}" if mean_24 is not None else "N/A"
+                mean_7_str  = f"{mean_7:.2f}"  if mean_7  is not None else "N/A"
+                mean_30_str = f"{mean_30:.2f}" if mean_30 is not None else "N/A"
+                mean_c_str  = f"{mean_c:.2f}"  if mean_c  is not None else "N/A"
+
+                prompt = (
+                    "You are analysing an electricity demand forecasting report.\n\n"
+                    f"Historical mean: {cons.mean():.2f} kWh\n"
+                    f"Historical peak: {cons.max():.2f} kWh\n"
+                    f"Anomalies: {anomaly_count} ({anomaly_rate:.2f}%)\n\n"
+                    f"24h avg: {mean_24_str} kWh\n"
+                    f"7d avg: {mean_7_str} kWh\n"
+                    f"30d avg: {mean_30_str} kWh\n"
+                    f"Custom avg: {mean_c_str} kWh\n\n"
+                    "Give:\n"
+                    "1) 2â€“3 sentence insight about demand pattern,\n"
+                    "2) mention peaks / anomalies,\n"
+                    "3) 1â€“2 actionable recommendations for grid operators.\n"
+                    "Max 120 words, plain text."
+                )
+
+                resp = model.generate_content(prompt)
+                ai_text = resp.text.strip()
+            except Exception as e:
+                st.error(f"Gemini error: {e}")
+                ai_text = None
+
+            if ai_text:
+                lines.extend([
+                    "\n## AI Summary (Gemini)",
+                    ai_text,
+                ])
+            else:
+                stability = "stable" if (cons.std() / cons.mean() < 0.15) else "variable"
+                lines.extend([
+                    "\n## AI Summary (Fallback)",
+                    f"- Load appears {stability} (CV={cons.std()/cons.mean()*100:.1f}%).",
+                    f"- Peak-to-average ratio: {cons.max()/cons.mean():.2f}x.",
+                    f"- {anomaly_count} anomalies ({anomaly_rate:.2f}%) suggest "
+                    f"{'good' if anomaly_rate < 1 else 'some'} data quality.",
+                ])
+
             return "\n".join(lines)
 
-
+        # build once so both preview and download use same text
         report_text = build_report_text()
 
         col1, col2 = st.columns(2)
 
+        # single button: generates and downloads directly
         with col1:
             st.download_button(
-                "📥 Download Report (TXT)",
+                "ðŸ“¥ Download Report (TXT)",
                 data=report_text.encode("utf-8"),
                 file_name=f"powergrid_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                 mime="text/plain",
                 use_container_width=True,
             )
 
+        # preprocessed data download (if available)
         with col2:
             target_df = df_proc if df_proc is not None else df
             csv_bytes = target_df.to_csv(index=False)
             st.download_button(
-                "📥 Download Data (CSV)",
+                "ðŸ“¥ Download Data (CSV)",
                 data=csv_bytes,
                 file_name=f"powergrid_preprocessed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
                 use_container_width=True,
             )
 
-        with st.expander("📄 Report Preview"):
+        # optional preview
+        with st.expander("ðŸ“„ Report Preview"):
             st.text_area("", report_text, height=350, disabled=True)
 
         st.divider()
-
-        st.markdown("### ⚙️ System Settings")
+        st.markdown("### ðŸ”§ System Settings")
         c1, c2 = st.columns(2)
-
         with c1:
-            if st.button("💾 Save Session Manually", use_container_width=True):
+            if st.button("ðŸ’¾ Save Session Manually", use_container_width=True):
                 save_user_session()
-                st.success("✅ Session saved to database")
-
+                st.success("âœ… Session saved to database")
         with c2:
-            if st.button("🗑️ Clear All Data", use_container_width=True):
+            if st.button("ðŸ—‘ï¸ Clear All Data", use_container_width=True):
                 st.session_state.df_uploaded = None
                 st.session_state.df_processed = None
                 st.session_state.predictions = None
                 save_user_session()
                 st.rerun()
-
     else:
-        st.info("📋 No data available. Upload data to create reports.")
+        st.info("No data available. Upload data to create reports.")
 
     st.divider()
-
-    st.markdown("### ℹ️ About")
-    st.markdown("""
+    st.markdown("### â„¹ï¸ About")
+    st.markdown(
+        """
 **PowerGrid Analytics v2.0**
 
-- ✅ Secure authentication with SQLite database
-- ✅ Automatic session persistence
-- ✅ **Tab persistence on page refresh**
-- ✅ ML-based load forecasting (24h/7d/30d)
-- ✅ Real-time anomaly detection
-- ✅ Professional data visualization
+- ðŸ” Secure authentication with SQLite database
+- ðŸ’¾ Automatic session persistence
+- ðŸ“Š ML-based load forecasting (24h/7d/30d)
+- ðŸš¨ Real-time anomaly detection
+- ðŸ“ˆ Professional data visualization
 
-**Tech Stack:** Streamlit · FastAPI · SQLite · Plotly · Scikit-learn
-""")
+**Tech Stack:** Streamlit â€¢ FastAPI â€¢ SQLite â€¢ Plotly â€¢ Scikit-learn
+"""
+    )
